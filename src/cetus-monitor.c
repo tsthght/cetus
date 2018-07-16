@@ -288,6 +288,14 @@ group_replication_detect(network_backends_t *bs, cetus_monitor_t *monitor)
         mysql_free_result(rs_set);
     }
 
+    g_message("## master: %s", master_addr);
+    GList *itt = NULL;
+    for(itt = slave_list; itt; itt = itt->next) {
+            gchar slave_addr_temp[ADDRESS_LEN] = {""};
+            snprintf(slave_addr_temp, ADDRESS_LEN, "%s@%s", (char *)(itt->data), server_group);
+            g_message("## slave: %s", slave_addr_temp);
+    }
+
     backends_num = network_backends_count(bs);
     for (i = 0; i < backends_num; i++) {
         network_backend_t *backend = network_backends_get(bs, i);
