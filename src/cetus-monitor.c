@@ -181,10 +181,10 @@ group_replication_detect(network_backends_t *bs, cetus_monitor_t *monitor)
     backends_num = network_backends_count(bs);
     for (i = 0; i < backends_num; i++) {
         network_backend_t *backend = network_backends_get(bs, i);
-        if (backend->state == BACKEND_STATE_MAINTAINING)
+        if (backend->state == BACKEND_STATE_MAINTAINING) {
             g_message("backend: %s, state is BACKEND_STATE_MAINTAINING, break.", backend->addr->name->str);
             continue;
-
+        }
         char *backend_addr = backend->addr->name->str;
         MYSQL *conn = get_mysql_connection(monitor, backend_addr);
         MYSQL_RES *rs_set = NULL;
