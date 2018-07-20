@@ -409,10 +409,11 @@ check_backend_alive(int fd, short what, void *arg)
         network_backend_t *backend = network_backends_get(bs, i);
         backend_state_t oldstate = backend->state;
         gint ret = 0;
-        if (backend->state == BACKEND_STATE_DELETED || backend->state == BACKEND_STATE_MAINTAINING)
+        if (backend->state == BACKEND_STATE_DELETED || backend->state == BACKEND_STATE_MAINTAINING) {
             g_message("current backend: %s, state = %s", backend->addr->name->str,
                     backend->state == BACKEND_STATE_DELETED ? "BACKEND_STATE_DELETED": "BACKEND_STATE_MAINTAINING");
             continue;
+        }
 
         char *backend_addr = backend->addr->name->str;
         int check_count = 0;
