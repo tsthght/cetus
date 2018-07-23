@@ -556,6 +556,8 @@ chassis_config_parse_options(chassis_config_t *conf, GList *entries)
             case OPTION_ARG_NONE:
                 if (entry->arg_data == NULL)
                     break;
+
+                g_message("## key=%s, value=%s", entry->long_name, entry_value);
                 if (strcasecmp(entry_value, "false")==0 || strncmp(entry_value, "0", 1)==0) {
                     *(int *)(entry->arg_data) = 0;
                 } else if (strcasecmp(entry_value, "true")==0 || isdigit(entry_value[0])) {
