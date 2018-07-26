@@ -40,6 +40,8 @@
 #include "chassis-event.h"
 #include "glib-ext.h"
 #include "sharding-config.h"
+#include "network-mysqld.h"
+#include "network-address.h"
 
 #include <netdb.h>
 
@@ -405,6 +407,9 @@ check_backend_alive(int fd, short what, void *arg)
             continue;
 
         char *backend_addr = backend->addr->name->str;
+
+old:    ;
+        char *old_addr = backend_addr;
         int check_count = 0;
         MYSQL *conn = NULL;
         while (++check_count <= CHECK_ALIVE_TIMES) {
@@ -414,19 +419,23 @@ check_backend_alive(int fd, short what, void *arg)
         }
 
         if (conn == NULL) {
-            if (backend->state != BACKEND_STATE_DOWN) {
-                if (backend->type != BACKEND_TYPE_RW) {
-                    ret = network_backends_modify(bs, i, backend->type, BACKEND_STATE_DOWN, oldstate);
-                    if(ret == 0) {
-                        g_critical("Backend %s is set to DOWN.", backend_addr);
-                    } else {
-                        g_critical("Backend %s is set to DOWN failed.", backend_addr);
+            server_connection_state_t *scs = network_mysqld_self_con_init(chas);
+            network_address_set_address(scs->server->dst, backend->address->str);
+            if (backend->address->str == old_addr) {
+                if (backend->state != BACKEND_STATE_DOWN) {
+                    if (backend->type != BACKEND_TYPE_RW) {
+                        ret = network_backends_modify(bs, i, backend->type, BACKEND_STATE_DOWN, oldstate);
+                        if(ret == 0) {
+                            g_critical("Backend %s is set to DOWN.", backend_addr);
+                        } else {
+                            g_critical("Backend %s is set to DOWN failed.", backend_addr);
+                        }
                     }
-                } else {
-                    g_critical("get null conn from Backend %s.", backend_addr);
+                    g_debug("Backend %s is not ALIVE!", backend_addr);
                 }
+            } else {
+                goto old;
             }
-            g_debug("Backend %s is not ALIVE!", backend_addr);
         } else {
             if (backend->state != BACKEND_STATE_UP) {
                 ret = network_backends_modify(bs, i, backend->type, BACKEND_STATE_UP, oldstate);
