@@ -58,7 +58,7 @@ struct sql_log_mgr {
     SQL_LOG_SWITCH sql_log_switch;
     SQL_LOG_MODE sql_log_mode;
     gchar *sql_log_path;
-    gulong sql_log_maxsize;
+    guint sql_log_maxsize;
     volatile SQL_LOG_ACTION sql_log_idletime;
     volatile guint sql_log_maxnum;
 
