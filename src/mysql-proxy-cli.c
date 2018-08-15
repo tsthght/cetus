@@ -158,6 +158,15 @@ struct chassis_frontend_t {
     gchar *sql_log_mode;
     guint sql_log_idletime;
     gint sql_log_maxnum;
+
+    guint audit_log_bufsize;
+    gchar *audit_log_switch;
+    gchar *audit_log_filename;
+    gchar *audit_log_path;
+    gint audit_log_maxsize;
+    gchar *audit_log_mode;
+    guint audit_log_idletime;
+    gint audit_log_maxnum;
 };
 
 /**
@@ -237,6 +246,11 @@ chassis_frontend_free(struct chassis_frontend_t *frontend)
     g_free(frontend->sql_log_filename);
     g_free(frontend->sql_log_path);
     g_free(frontend->sql_log_mode);
+
+    g_free(frontend->audit_log_switch);
+    g_free(frontend->audit_log_filename);
+    g_free(frontend->audit_log_path);
+    g_free(frontend->audit_log_mode);
 
     g_slice_free(struct chassis_frontend_t, frontend);
 }
@@ -496,32 +510,32 @@ chassis_frontend_set_chassis_options(struct chassis_frontend_t *frontend, chassi
     chassis_options_add(opts,
                         "sql-log-bufsize",
                         0, 0, OPTION_ARG_INT, &(frontend->sql_log_bufsize),
-                        "the buffer size of the log","<int>",
+                        "the buffer size of the sql log","<int>",
                         NULL, show_sql_log_bufsize, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
     chassis_options_add(opts,
                         "sql-log-switch",
                         0, 0, OPTION_ARG_STRING, &(frontend->sql_log_switch),
-                        "the log switch, ON/OFF/REALTIME","<string>",
+                        "the sql log switch, ON/OFF/REALTIME","<string>",
                         assign_sql_log_switch, show_sql_log_switch, ALL_OPTS_PROPERTY);
     chassis_options_add(opts,
                         "sql-log-filename",
                          0, 0, OPTION_ARG_STRING, &(frontend->sql_log_filename),
-                         "the log filename","<string>",
+                         "the sql log filename","<string>",
                          NULL, show_sql_log_filename, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
     chassis_options_add(opts,
                          "sql-log-path",
                           0, 0, OPTION_ARG_STRING, &(frontend->sql_log_path),
-                          "the log path","<string>",
+                          "the sql log path","<string>",
                           NULL, show_sql_log_path, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
     chassis_options_add(opts,
                          "sql-log-maxsize",
                           0, 0, OPTION_ARG_INT, &(frontend->sql_log_maxsize),
-                          "the maxsize of sql file, units is M","<int>",
+                          "the maxsize of sql log file, units is M","<int>",
                           NULL, show_sql_log_maxsize, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
     chassis_options_add(opts,
                          "sql-log-mode",
                           0, 0, OPTION_ARG_STRING, &(frontend->sql_log_mode),
-                          "the mode of sql file","<string>",
+                          "the mode of sql log file","<string>",
                           assign_sql_log_mode, show_sql_log_mode, ALL_OPTS_PROPERTY);
     chassis_options_add(opts,
                          "sql-log-idletime",
@@ -533,6 +547,41 @@ chassis_frontend_set_chassis_options(struct chassis_frontend_t *frontend, chassi
                           0, 0, OPTION_ARG_INT, &(frontend->sql_log_maxnum),
                           "aximum number of sql log files","<int>",
                           assign_sql_log_maxnum, show_sql_log_maxnum, ALL_OPTS_PROPERTY);
+    chassis_options_add(opts,
+                        "audit-log-bufsize",
+                        0, 0, OPTION_ARG_INT, &(frontend->audit_log_bufsize),
+                        "the buffer size of the audit log","<int>",
+                        NULL, show_audit_log_bufsize, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
+    chassis_options_add(opts,
+                        "audit-log-switch",
+                        0, 0, OPTION_ARG_STRING, &(frontend->audit_log_switch),
+                        "the audit log switch, ON/OFF/REALTIME","<string>",
+                        assign_audit_log_switch, show_audit_log_switch, ALL_OPTS_PROPERTY);
+    chassis_options_add(opts,
+                        "audit-log-filename",
+                         0, 0, OPTION_ARG_STRING, &(frontend->audit_log_filename),
+                         "the audit log filename","<string>",
+                         NULL, show_audit_log_filename, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
+    chassis_options_add(opts,
+                         "audit-log-path",
+                          0, 0, OPTION_ARG_STRING, &(frontend->audit_log_path),
+                          "the audit log path","<string>",
+                          NULL, show_audit_log_path, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
+    chassis_options_add(opts,
+                         "audit-log-maxsize",
+                          0, 0, OPTION_ARG_INT, &(frontend->audit_log_maxsize),
+                          "the maxsize of audit log file, units is M","<int>",
+                          NULL, show_audit_log_maxsize, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
+    chassis_options_add(opts,
+                         "audit-log-mode",
+                          0, 0, OPTION_ARG_STRING, &(frontend->audit_log_mode),
+                          "the mode of audit log file","<string>",
+                          assign_audit_log_mode, show_audit_log_mode, ALL_OPTS_PROPERTY);
+    chassis_options_add(opts,
+                         "audit-log-idletime",
+                          0, 0, OPTION_ARG_INT, &(frontend->audit_log_idletime),
+                          "audit log idle time when no log flush to disk","<int>",
+                          assign_audit_log_idletime, show_audit_log_idletime, ALL_OPTS_PROPERTY);
 
     return 0;
 }
@@ -1146,11 +1195,11 @@ main_cmdline(int argc, char **argv)
         }
         if (frontend->sql_log_switch) {
             if (strcasecmp(frontend->sql_log_switch, "ON") == 0) {
-                srv->sql_mgr->sql_log_switch = ON;
+                srv->sql_mgr->sql_log_switch = SQL_LOG_ON;
             } else if (strcasecmp(frontend->sql_log_switch, "REALTIME") == 0) {
-                srv->sql_mgr->sql_log_switch = REALTIME;
+                srv->sql_mgr->sql_log_switch = SQL_LOG_REALTIME;
             } else if (strcasecmp(frontend->sql_log_switch, "OFF") == 0) {
-                srv->sql_mgr->sql_log_switch = OFF;
+                srv->sql_mgr->sql_log_switch = SQL_LOG_OFF;
             } else {
                 g_critical("sql-log-switch is invalid, current value is %s", frontend->sql_log_switch);
                 GOTO_EXIT(EXIT_FAILURE);

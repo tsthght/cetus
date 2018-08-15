@@ -57,6 +57,8 @@ SET(chassis_sources
     chassis-config.c
     cJSON.c
     chassis-sql-log.c
+    chassis-audit-log.c
+    chassis-rfifo.c
 )
 
 SET(timing_sources

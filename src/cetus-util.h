@@ -44,10 +44,13 @@ void cetus_string_dequote(char *z);
 #define MB 1024 * KB
 #define GB 1024 * MB
 
+#define min(a, b) ((a) < (b) ? (a) : (b))
+
 gboolean try_get_int_value(const gchar *option_value, gint *return_value);
 gboolean try_get_double_value(const gchar *option_value, gdouble *return_value);
 
 int make_iso8601_timestamp(char *buf, uint64_t utime);
 guint64 get_timer_microseconds();
+guint roundup_pow_of_two(const guint x);
 
 #endif

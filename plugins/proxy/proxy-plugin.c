@@ -683,7 +683,7 @@ proxy_inject_packet(network_mysqld_con *con, int type, int resp_type, GString *p
     proxy_plugin_con_t *st = con->plugin_con_state;
     GQueue *q = st->injected.queries;
     injection *inj = injection_new(resp_type, payload);
-    if (con->srv->sql_mgr && con->srv->sql_mgr->sql_log_switch == ON) {
+    if (con->srv->sql_mgr && con->srv->sql_mgr->sql_log_switch == SQL_LOG_ON) {
         inj->ts_read_query = get_timer_microseconds();
     }
     inj->resultset_is_needed = resultset_is_needed;
@@ -1919,7 +1919,7 @@ NETWORK_MYSQLD_PLUGIN_PROTO(proxy_read_query_result)
             default:
                 g_debug("%s: no chance to get server status", G_STRLOC);
             }
-            if (con->srv->sql_mgr && con->srv->sql_mgr->sql_log_switch == ON) {
+            if (con->srv->sql_mgr && con->srv->sql_mgr->sql_log_switch == SQL_LOG_ON) {
                 inj->ts_read_query_result_last = get_timer_microseconds();
                 log_sql_backend(con, inj);
             }

@@ -1412,7 +1412,7 @@ proxy_add_server_connection(network_mysqld_con *con, GString *group, int *server
             ss->is_in_xa = 0;
         }
         ss->server->is_robbed = is_robbed;
-        if (con->srv->sql_mgr && con->srv->sql_mgr->sql_log_switch == ON) {
+        if (con->srv->sql_mgr && con->srv->sql_mgr->sql_log_switch == SQL_LOG_ON) {
             ss->ts_read_query = get_timer_microseconds();
         }
 

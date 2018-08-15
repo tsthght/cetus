@@ -458,3 +458,12 @@ cmd ::= SQL LOG START SEMI. {
 cmd ::= SQL LOG STOP SEMI. {
   admin_sql_log_stop(con);
 }
+cmd ::= AUDIT LOG STATUS SEMI. {
+  admin_audit_log_status(con);
+}
+cmd ::= AUDIT LOG START SEMI. {
+  admin_audit_log_start(con);
+}
+cmd ::= AUDIT LOG STOP SEMI. {
+  admin_audit_log_stop(con);
+}

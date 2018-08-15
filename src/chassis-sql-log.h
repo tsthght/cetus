@@ -1,20 +1,16 @@
 #ifndef _CHASSIS_SQL_LOG_H
 #define _CHASSIS_SQL_LOG_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <glib.h>
+#include "chassis-rfifo.h"
 #include "network-mysqld.h"
 #include "network-injection.h"
+#include "cetus-util.h"
 
 #define SQL_LOG_BUFFER_DEF_SIZE 1024*1024*10
 #define SQL_LOG_DEF_FILE_NAME "cetus_sql"
 #define SQL_LOG_DEF_SUFFIX "sql"
 #define SQL_LOG_DEF_PATH "/var/log/"
 #define SQL_LOG_DEF_IDLETIME 500
-#define MEGABYTES 1024*1024
-
-#define min(a, b) ((a) < (b) ? (a) : (b))
 
 #define GET_COM_NAME(com_type) \
      ((((gushort)com_type) >= 0 && ((gushort)com_type) <= 31) ? com_command_name[((gushort)com_type)].com_str : "UNKNOWN TYPE")
@@ -26,9 +22,9 @@ typedef struct com_string {
 } COM_STRING;
 
 typedef enum {
-    OFF,
-    ON,
-    REALTIME
+    SQL_LOG_OFF,
+    SQL_LOG_ON,
+    SQL_LOG_REALTIME
 } SQL_LOG_SWITCH;
 
 typedef enum {
@@ -45,22 +41,15 @@ typedef enum {
     SQL_LOG_STOP
 } SQL_LOG_ACTION;
 
-struct rfifo {
-    guchar *buffer;
-    guint size;
-    guint in;
-    guint out;
-};
-
 struct sql_log_mgr {
     guint sql_log_bufsize;
     SQL_LOG_SWITCH sql_log_switch;
     SQL_LOG_MODE sql_log_mode;
     guint sql_log_maxsize;
     gulong sql_log_cursize;
-    volatile guint sql_log_action;
+    volatile SQL_LOG_ACTION sql_log_action;
 
-    volatile SQL_LOG_ACTION sql_log_idletime;
+    volatile guint sql_log_idletime;
     volatile guint sql_log_maxnum;
 
     gchar *sql_log_filename;

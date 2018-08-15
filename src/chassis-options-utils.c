@@ -23,6 +23,7 @@
 #include "chassis-plugin.h"
 #include "cetus-util.h"
 #include "chassis-sql-log.h"
+#include "chassis-audit-log.h"
 #include "network-backend.h"
 #include <glib-ext.h>
 #include <errno.h>
@@ -1250,9 +1251,9 @@ show_sql_log_switch(gpointer param) {
     chassis *srv = opt_param->chas;
     gint opt_type = opt_param->opt_type;
     if (CAN_SHOW_OPTS_PROPERTY(opt_type) || CAN_SAVE_OPTS_PROPERTY(opt_type)) {
-        if (srv->sql_mgr->sql_log_switch == ON) {
+        if (srv->sql_mgr->sql_log_switch == SQL_LOG_ON) {
             return g_strdup("ON");
-        } else if (srv->sql_mgr->sql_log_switch == REALTIME) {
+        } else if (srv->sql_mgr->sql_log_switch == SQL_LOG_REALTIME) {
             return g_strdup("REALTIME");
         } else {
             return g_strdup("OFF");
@@ -1269,13 +1270,13 @@ assign_sql_log_switch(const gchar *newval, gpointer param) {
     gint opt_type = opt_param->opt_type;
     if (CAN_ASSIGN_OPTS_PROPERTY(opt_type)) {
         if (strcasecmp(newval, "ON") == 0) {
-            srv->sql_mgr->sql_log_switch = ON;
+            srv->sql_mgr->sql_log_switch = SQL_LOG_ON;
             ret = ASSIGN_OK;
         } else if (strcasecmp(newval, "REALTIME") == 0) {
-            srv->sql_mgr->sql_log_switch = REALTIME;
+            srv->sql_mgr->sql_log_switch = SQL_LOG_REALTIME;
             ret = ASSIGN_OK;
         } else if (strcasecmp(newval, "OFF") == 0) {
-            srv->sql_mgr->sql_log_switch = OFF;
+            srv->sql_mgr->sql_log_switch = SQL_LOG_OFF;
             ret = ASSIGN_OK;
         }
     }
@@ -1440,6 +1441,120 @@ assign_sql_log_maxnum(const gchar *newval, gpointer param) {
             }
         } else {
             ret = ASSIGN_VALUE_INVALID;
+        }
+    }
+    return ret;
+}
+
+gchar*
+show_audit_log_bufsize(gpointer param) {
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_SHOW_OPTS_PROPERTY(opt_type) || CAN_SAVE_OPTS_PROPERTY(opt_type)) {
+        return g_strdup_printf("%u", srv->audit_mgr->audit_log_bufsize);
+    }
+    return NULL;
+}
+
+gchar*
+show_audit_log_switch(gpointer param) {
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_SHOW_OPTS_PROPERTY(opt_type) || CAN_SAVE_OPTS_PROPERTY(opt_type)) {
+        if (srv->audit_mgr->audit_log_switch == AUDIT_LOG_ON) {
+            return g_strdup("ON");
+        } else if (srv->audit_mgr->audit_log_switch == AUDIT_LOG_REALTIME) {
+            return g_strdup("REALTIME");
+        } else {
+            return g_strdup("OFF");
+        }
+    }
+    return NULL;
+}
+
+gint
+assign_audit_log_switch(const gchar *newval, gpointer param) {
+    gint ret = ASSIGN_VALUE_INVALID;
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_ASSIGN_OPTS_PROPERTY(opt_type)) {
+        if (strcasecmp(newval, "ON") == 0) {
+            srv->audit_mgr->audit_log_switch = AUDIT_LOG_ON;
+            ret = ASSIGN_OK;
+        } else if (strcasecmp(newval, "REALTIME") == 0) {
+            srv->audit_mgr->audit_log_switch = AUDIT_LOG_REALTIME;
+            ret = ASSIGN_OK;
+        } else if (strcasecmp(newval, "OFF") == 0) {
+            srv->audit_mgr->audit_log_switch = AUDIT_LOG_OFF;
+            ret = ASSIGN_OK;
+        }
+    }
+    return ret;
+}
+
+gchar* show_audit_log_filename(gpointer param) {
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_SHOW_OPTS_PROPERTY(opt_type) || CAN_SAVE_OPTS_PROPERTY(opt_type)) {
+        if (srv->audit_mgr->audit_log_filename == NULL) {
+            return g_strdup("NULL");
+        } else {
+            return g_strdup_printf("%s", srv->audit_mgr->audit_log_filename);
+        }
+    }
+    return NULL;
+}
+
+CHASSIS_API gchar* show_audit_log_path(gpointer param) {
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_SHOW_OPTS_PROPERTY(opt_type) || CAN_SAVE_OPTS_PROPERTY(opt_type)) {
+        if (srv->audit_mgr->audit_log_path == NULL) {
+            return g_strdup("NULL");
+        } else {
+            return g_strdup_printf("%s", srv->audit_mgr->audit_log_path);
+        }
+    }
+    return NULL;
+}
+
+gchar* show_audit_log_maxsize(gpointer param) {
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_SHOW_OPTS_PROPERTY(opt_type) || CAN_SAVE_OPTS_PROPERTY(opt_type)) {
+        return g_strdup_printf("%u M", srv->audit_mgr->audit_log_maxsize);
+    }
+    return NULL;
+}
+
+gchar* show_audit_log_mode(gpointer param) {
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_SHOW_OPTS_PROPERTY(opt_type) || CAN_SAVE_OPTS_PROPERTY(opt_type)) {
+        if (srv->audit_mgr->audit_log_mode == LOGIN) {
+            return g_strdup("LOGIN");
+        }
+    }
+    return NULL;
+}
+
+gint
+assign_audit_log_mode(const gchar *newval, gpointer param) {
+    gint ret = ASSIGN_VALUE_INVALID;
+    struct external_param *opt_param = (struct external_param *)param;
+    chassis *srv = opt_param->chas;
+    gint opt_type = opt_param->opt_type;
+    if (CAN_ASSIGN_OPTS_PROPERTY(opt_type)) {
+        if (strcasecmp(newval, "LOGIN") == 0) {
+            srv->audit_mgr->audit_log_mode = LOGIN;
+            ret = ASSIGN_OK;
         }
     }
     return ret;

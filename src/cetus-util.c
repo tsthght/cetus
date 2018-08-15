@@ -132,3 +132,13 @@ guint64 get_timer_microseconds() {
     }
     return last_value;
 }
+
+guint roundup_pow_of_two(const guint x) {
+    if (x == 0) return 0;
+    if (x == 1) return 2;
+    unsigned int ret = 1U;
+    while(ret < x) {
+        ret <<= 1;
+    }
+    return ret;
+}

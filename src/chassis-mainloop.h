@@ -201,6 +201,7 @@ struct chassis {
     struct event update_timer_event;
 
     struct sql_log_mgr *sql_mgr;
+    struct audit_log_mgr *audit_mgr;
 };
 
 CHASSIS_API chassis *chassis_new(void);

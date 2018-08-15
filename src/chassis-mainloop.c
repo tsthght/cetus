@@ -49,6 +49,7 @@
 #include "chassis-log.h"
 #include "chassis-timings.h"
 #include "chassis-sql-log.h"
+#include "chassis-audit-log.h"
 
 static volatile sig_atomic_t signal_shutdown;
 
@@ -114,6 +115,7 @@ chassis_new()
     chas->group_replication_mode = 0;
 
     chas->sql_mgr = sql_log_alloc();
+    chas->audit_mgr = audit_log_alloc();
 
     return chas;
 }
@@ -246,6 +248,9 @@ chassis_free(chassis *chas)
 
     if(chas->sql_mgr) {
         sql_log_free(chas->sql_mgr);
+    }
+    if(chas->audit_mgr) {
+        audit_log_free(chas->audit_mgr);
     }
 
     g_free(chas);

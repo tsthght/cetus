@@ -25,6 +25,7 @@
 #include "sharding-config.h"
 #include "chassis-options-utils.h"
 #include "chassis-sql-log.h"
+#include "chassis-audit-log.h"
 
 static const char *get_conn_xa_state_name(network_mysqld_con_dist_tran_state_t state) {
     switch (state) {
@@ -1426,6 +1427,9 @@ static struct sql_help_entry_t {
     {"sql log status", "show sql log status", ALL_HELP},
     {"sql log start", "start sql log thread", ALL_HELP},
     {"sql log stop", "stop sql log thread", ALL_HELP},
+    {"audit log status", "show audit log status", ALL_HELP},
+    {"audit log start", "start audit log thread", ALL_HELP},
+    {"audit log stop", "stop audit log thread", ALL_HELP},
     {NULL, NULL, 0}
 };
 
@@ -1795,7 +1799,7 @@ void admin_sql_log_start(network_mysqld_con* con) {
         network_mysqld_con_send_error(con->client, C("Unexpected error"));
         return;
     }
-    if (con->srv->sql_mgr->sql_log_switch == OFF) {
+    if (con->srv->sql_mgr->sql_log_switch == SQL_LOG_OFF) {
         network_mysqld_con_send_error(con->client, C("can not start sql log thread, because sql-log-switch = OFF"));
         return;
     }
@@ -1860,6 +1864,88 @@ void admin_sql_log_status(network_mysqld_con* con) {
     APPEND_ROW_3_COL(rows, "sql-log-cached", cached, "Internal");
     gchar *cursize = g_strdup_printf("%lu", con->srv->sql_mgr->sql_log_cursize);
     APPEND_ROW_3_COL(rows, "sql-log-cursize", cursize, "Internal");
+
+    network_mysqld_con_send_resultset(con->client, fields, rows);
+
+    network_mysqld_proto_fielddefs_free(fields);
+    g_ptr_array_free(rows, TRUE);
+    g_list_free_full(freelist, g_free);
+    g_list_free(options);
+    g_free(pattern);
+    g_free(cached);
+    g_free(cursize);
+}
+
+void admin_audit_log_start(network_mysqld_con* con) {
+    if (!con || !con->srv || !con->srv->audit_mgr) {
+        network_mysqld_con_send_error(con->client, C("Unexpected error"));
+        return;
+    }
+    if (con->srv->audit_mgr->audit_log_switch == AUDIT_LOG_OFF) {
+        network_mysqld_con_send_error(con->client, C("can not start audit log thread, because audit-log-switch = OFF"));
+        return;
+    }
+    if (con->srv->audit_mgr->audit_log_action == AUDIT_LOG_STOP) {
+        audit_log_thread_start(con->srv->audit_mgr);
+        network_mysqld_con_send_ok(con->client);
+    } else {
+        network_mysqld_con_send_error(con->client, C("audit log is running now"));
+    }
+}
+
+void admin_audit_log_stop(network_mysqld_con* con) {
+    if (!con || !con->srv || !con->srv->audit_mgr) {
+        network_mysqld_con_send_error(con->client, C("Unexpected error"));
+        return;
+    }
+    if (con->srv->audit_mgr->audit_log_action == AUDIT_LOG_START) {
+        con->srv->audit_mgr->audit_log_action = AUDIT_LOG_UNKNOWN;
+        network_mysqld_con_send_ok(con->client);
+    } else {
+        network_mysqld_con_send_error(con->client, C("audit log thread has been stopped"));
+    }
+}
+
+void admin_audit_log_status(network_mysqld_con* con) {
+    if (!con || !con->srv || !con->srv->audit_mgr) {
+        network_mysqld_con_send_error(con->client, C("Unexpected error"));
+        return;
+    }
+    gchar* pattern = g_strdup("%audit-log-%");
+    GList *options = admin_get_all_options(con->srv);
+
+    GPtrArray *fields = network_mysqld_proto_fielddefs_new();
+    MAKE_FIELD_DEF_3_COL(fields, "Variable_name", "Value", "Property");
+
+    GPtrArray *rows = g_ptr_array_new_with_free_func((void *)network_mysqld_mysql_field_row_free);
+
+    GList *freelist = NULL;
+    GList *l = NULL;
+    for (l = options; l; l = l->next) {
+        chassis_option_t *opt = l->data;
+        /* just support these for now */
+        if (sql_pattern_like(pattern, opt->long_name)) {
+            struct external_param param = {0};
+            param.chas = con->srv;
+            param.opt_type = opt->opt_property;
+            char *value = opt->show_hook != NULL? opt->show_hook(&param) : NULL;
+            if(NULL == value) {
+                continue;
+            }
+            freelist = g_list_append(freelist, value);
+            APPEND_ROW_3_COL(rows, (char *)opt->long_name, value, (CAN_ASSIGN_OPTS_PROPERTY(opt->opt_property)? "Dynamic" : "Static"));
+        }
+    }
+    APPEND_ROW_3_COL(rows, "audit-log-state", con->srv->audit_mgr->audit_log_action == AUDIT_LOG_START ? "running": "stopped", "Internal");
+    gchar *cached = NULL;
+    if (con->srv->audit_mgr->fifo && (con->srv->audit_mgr->audit_log_action == AUDIT_LOG_START)) {
+        cached = g_strdup_printf("%u", con->srv->audit_mgr->fifo->in - con->srv->audit_mgr->fifo->in);
+    } else {
+        cached = g_strdup("NULL");
+    }
+    APPEND_ROW_3_COL(rows, "audit-log-cached", cached, "Internal");
+    gchar *cursize = g_strdup_printf("%lu", con->srv->audit_mgr->audit_log_cursize);
+    APPEND_ROW_3_COL(rows, "audit-log-cursize", cursize, "Internal");
 
     network_mysqld_con_send_resultset(con->client, fields, rows);
 

@@ -1,8 +1,8 @@
 #include "chassis-sql-log.h"
 #include "network-mysqld-packet.h"
 #include <sys/stat.h>
-#include <sys/types.h>
-#include<unistd.h>
+//#include <sys/types.h>
+//#include<unistd.h>
 
 const COM_STRING com_command_name[]={
     { C("Sleep") },
@@ -51,16 +51,6 @@ const char *com_dis_tras_state[]={
     "NEXT_ST_XA_OVER"
 };
 
-static guint roundup_pow_of_two(const guint x) {
-    if (x == 0) return 0;
-    if (x == 1) return 2;
-    unsigned int ret = 1U;
-    while(ret < x) {
-        ret <<= 1;
-    }
-    return ret;
-}
-
 static void get_current_time_str(GString *str) {
     if (!str) {
         g_critical("str is NULL when call get_current_time_str()");
@@ -76,46 +66,6 @@ static void get_current_time_str(GString *str) {
 
     str->len = strftime(str->str, str->allocated_len, "%Y-%m-%d %H:%M:%S", tm);
     g_string_append_printf(str, ".%.3d", (int) tv.tv_usec/1000);
-}
-
-static struct rfifo *rfifo_alloc(guint size) {
-    struct rfifo *ret = (struct rfifo *)g_malloc0(sizeof(struct rfifo));;
-
-    if (!ret) {
-        return NULL;
-    }
-
-    if (size & (size - 1)) {
-        size = roundup_pow_of_two(size);
-    }
-    ret->buffer = (unsigned char *)g_malloc0(size);
-    if (!ret->buffer) {
-        g_free(ret);
-        return NULL;
-    }
-    ret->size = size;
-    ret->in = ret->out = 0;
-    return ret;
-}
-
-static void rfifo_free(struct rfifo *fifo) {
-    if (!fifo) return;
-    g_free(fifo->buffer);
-    g_free(fifo);
-}
-
-static guint rfifo_write(struct rfifo *fifo, guchar *buffer, guint len) {
-    if (!fifo) {
-        g_critical("struct fifo is NULL when call rfifo_write()");
-        return -1;
-    }
-    guint l;
-    len = min(len, (fifo->size - fifo->in + fifo->out));
-    l = min(len, fifo->size - (fifo->in & (fifo->size -1)));
-    memcpy(fifo->buffer + (fifo->in & (fifo->size -1)), buffer, l);//g_strlcpy
-    memcpy(fifo->buffer, buffer + l, len - l);
-    fifo->in += len;
-    return len;
 }
 
 static guint rfifo_flush(struct sql_log_mgr *mgr) {
@@ -144,7 +94,7 @@ static guint rfifo_flush(struct sql_log_mgr *mgr) {
     guint s2 = pwrite(fd, fifo->buffer, len -l, (off_t)mgr->sql_log_cursize);
     mgr->sql_log_cursize += s2;
     fifo->out += s2;
-    if(mgr->sql_log_switch == REALTIME) {
+    if(mgr->sql_log_switch == SQL_LOG_REALTIME) {
         fsync(fd);
     }
     return (s1 + s2);
@@ -161,7 +111,7 @@ struct sql_log_mgr *sql_log_alloc() {
     mgr->sql_log_path = NULL;
     mgr->sql_log_bufsize = SQL_LOG_BUFFER_DEF_SIZE;
     mgr->sql_log_mode = BACKEND;
-    mgr->sql_log_switch = OFF;
+    mgr->sql_log_switch = SQL_LOG_OFF;
     mgr->sql_log_cursize = 0;
     mgr->sql_log_maxsize = 1024;
     mgr->sql_log_fullname = NULL;
@@ -237,7 +187,7 @@ static void sql_log_check_filenum(struct sql_log_mgr *mgr, gchar *filename) {
 static void sql_log_check_rotate(struct sql_log_mgr *mgr) {
     if (!mgr) return ;
     if (mgr->sql_log_maxsize == 0) return;
-    if (mgr->sql_log_cursize < ((gulong)mgr->sql_log_maxsize) * MEGABYTES) return ;
+    if (mgr->sql_log_cursize < ((gulong)mgr->sql_log_maxsize) * MB) return ;
 
     time_t t = time(NULL);
     struct tm cur_tm;
@@ -356,7 +306,7 @@ sql_log_thread_start(struct sql_log_mgr *mgr) {
      mgr->fifo = rfifo_alloc(mgr->sql_log_bufsize);
      mgr->sql_log_filelist = g_queue_new();
 
-     if (mgr->sql_log_switch == OFF) {
+     if (mgr->sql_log_switch == SQL_LOG_OFF) {
          g_message("sql thread is not start");
          return;
      }
@@ -375,7 +325,7 @@ log_sql_client(network_mysqld_con *con)
         g_critical("sql mgr is NULL when call log_sql_client()");
         return;
     }
-    if (mgr->sql_log_switch == OFF ||
+    if (mgr->sql_log_switch == SQL_LOG_OFF ||
         !(mgr->sql_log_mode & CLIENT) ||
         (mgr->sql_log_action != SQL_LOG_START)) {
         return;
@@ -408,7 +358,7 @@ log_sql_backend(network_mysqld_con *con, injection *inj)
          g_critical("sql mgr is NULL when call log_sql_backend()");
          return;
      }
-     if (mgr->sql_log_switch == OFF ||
+     if (mgr->sql_log_switch == SQL_LOG_OFF ||
          !(mgr->sql_log_mode & BACKEND) ||
          (mgr->sql_log_action != SQL_LOG_START)) {
          return;
@@ -448,7 +398,7 @@ log_sql_backend_sharding(network_mysqld_con *con, server_session_t *session)
          g_critical("sql mgr is NULL when call log_sql_backend_sharding()");
          return;
      }
-     if (mgr->sql_log_switch == OFF ||
+     if (mgr->sql_log_switch == SQL_LOG_OFF ||
          !(mgr->sql_log_mode & BACKEND) ||
          (mgr->sql_log_action != SQL_LOG_START)) {
          return;
@@ -504,7 +454,7 @@ log_sql_backend_sharding(network_mysqld_con *con, server_session_t *session)
          g_critical("sql mgr is NULL when call log_sql_connect()");
          return;
      }
-     if (mgr->sql_log_switch == OFF ||
+     if (mgr->sql_log_switch == SQL_LOG_OFF ||
          !(mgr->sql_log_mode & CONNECT) ||
          (mgr->sql_log_action != SQL_LOG_START)) {
          return;
