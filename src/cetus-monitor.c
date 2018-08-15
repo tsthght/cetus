@@ -42,6 +42,9 @@
 #include "sharding-config.h"
 
 #include <netdb.h>
+#include <arpa/inet.h>
+
+#include <netdb.h>
 
 #define CHECK_ALIVE_INTERVAL 3
 #define CHECK_ALIVE_TIMES 2
@@ -384,6 +387,24 @@ group_replication_detect(network_backends_t *bs, cetus_monitor_t *monitor)
     event_base_set(monitor->evloop, &(monitor->ev_struct));\
     evtimer_add(&(monitor->ev_struct), &timeout);
 
+
+gint check_hostname(network_backend_t *backend) {
+    gint ret = 0;
+    gchar *p = NULL;
+    if (!backend) return 0;
+    gchar old[INET_ADDRSTRLEN] = {""};
+    inet_ntop(AF_INET, &(backend->addr->addr.ipv4.sin_addr), old, sizeof(old));
+    if (0 != network_address_set_address(backend->addr, backend->address->str)) {
+        return ret;
+    }
+    char new[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(backend->addr->addr.ipv4.sin_addr), new, sizeof(new));
+    if (strcmp (old, new) != 0) {
+        ret = 1;
+    }
+    return ret;
+}
+
 static void
 check_backend_alive(int fd, short what, void *arg)
 {
@@ -407,6 +428,7 @@ check_backend_alive(int fd, short what, void *arg)
         char *backend_addr = backend->addr->name->str;
         int check_count = 0;
         MYSQL *conn = NULL;
+hostnameloop:
         while (++check_count <= CHECK_ALIVE_TIMES) {
             conn = get_mysql_connection(monitor, backend_addr);
             if (conn)
@@ -414,6 +436,9 @@ check_backend_alive(int fd, short what, void *arg)
         }
 
         if (conn == NULL) {
+            if (check_hostname(backend)) {
+                goto hostnameloop;
+            }
             if (backend->state != BACKEND_STATE_DOWN) {
                 if (backend->type != BACKEND_TYPE_RW) {
                     ret = network_backends_modify(bs, i, backend->type, BACKEND_STATE_DOWN, oldstate);
