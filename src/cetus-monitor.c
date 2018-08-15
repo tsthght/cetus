@@ -436,7 +436,7 @@ hostnameloop:
         }
 
         if (conn == NULL) {
-            if (check_hostname(backend)) {
+            if (chas->dns_test && check_hostname(backend)) {
                 goto hostnameloop;
             }
             if (backend->state != BACKEND_STATE_DOWN) {

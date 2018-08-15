@@ -1426,6 +1426,7 @@ static struct sql_help_entry_t {
     {"sql log status", "show sql log status", ALL_HELP},
     {"sql log start", "start sql log thread", ALL_HELP},
     {"sql log stop", "stop sql log thread", ALL_HELP},
+    {"sql log stop", "stop sql log thread", ALL_HELP},
     {NULL, NULL, 0}
 };
 
