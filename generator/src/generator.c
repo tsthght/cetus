@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "generator-daemon.h"
+#include "generator-options-parse.h"
 
 int main() {
     daemonize();
