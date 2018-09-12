@@ -13,7 +13,7 @@ void generator_option_free(generator_option_t *opt) {
     g_slice_free(generator_option_t, opt);
 }
 
-opt_errcode generator_option_set(generator_option_t *opt,
+opt_errcode_t generator_option_set(generator_option_t *opt,
                           const gchar *long_name,
                           gchar short_name,
                           gint flags,
@@ -49,14 +49,14 @@ void generator_options_free(generator_options_t *opts) {
     g_slice_free(generator_options_t, opts);
 }
 
-static opt_errcode generator_options_add_option(generator_options_t *opts, 
+static opt_errcode_t generator_options_add_option(generator_options_t *opts, 
                                   generator_option_t *opt) {
     if (!opts || !opt) return OPT_ARG_INVALID;
     opts->options = g_list_append(opts->options, opt);
     return OPT_SUCCESS;
 }
 
-opt_errcode generator_options_set(generator_options_t *opts,
+opt_errcode_t generator_options_set(generator_options_t *opts,
                                   const gchar *long_name,
                                   gchar short_name,
                                   gint flags,
@@ -68,7 +68,7 @@ opt_errcode generator_options_set(generator_options_t *opts,
                                   generator_opt_show_hook show_hook,
                                   opt_property_t property) {
     generator_option_t *opt = generator_option_new();
-    opt_errcode ret = generator_option_set(opt,
+    opt_errcode_t ret = generator_option_set(opt,
                                            long_name,
                                            short_name,
                                            flags,

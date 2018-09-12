@@ -36,7 +36,7 @@ typedef struct generator_option {
 
 generator_option_t *generator_option_new();
 void generator_option_free(generator_option_t *opt);
-opt_errcode generator_option_set(generator_option_t *opt,
+opt_errcode_t generator_option_set(generator_option_t *opt,
                           const gchar *long_name,
                           gchar short_name,
                           gint flags,
@@ -54,7 +54,7 @@ typedef struct generator_options {
 
 generator_options_t *generator_options_new();
 void generator_options_free(generator_options_t *opts);
-opt_errcode generator_options_set(generator_options_t *opts,
+opt_errcode_t generator_options_set(generator_options_t *opts,
                            const gchar *long_name,
                            gchar short_name,
                            gint flags,
