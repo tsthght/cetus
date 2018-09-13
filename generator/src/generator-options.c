@@ -1,4 +1,6 @@
-#include "generaator-options-parse.h"
+#include "generator-options.h"
+#include <string.h>
+#include <stdlib.h>
 
 generator_option_t *generator_option_new() {
     generator_option_t *opt = g_slice_new0(generator_option_t);
@@ -7,9 +9,9 @@ generator_option_t *generator_option_new() {
 
 void generator_option_free(generator_option_t *opt) {
     if (!opt) return;
-    g_free(opt->long_name);
-    g_free(opt->description);
-    g_free(opt->arg_description);
+    g_free((gchar *)opt->long_name);
+    g_free((gchar *)opt->description);
+    g_free((gchar *)opt->arg_description);
     g_slice_free(generator_option_t, opt);
 }
 
@@ -83,4 +85,54 @@ opt_errcode_t generator_options_set(generator_options_t *opts,
         ret = generator_options_add_option(opts, opt);
     }
     return ret;
+}
+
+static gboolean context_has_h_entry(generator_options_t *opts) {
+    GList *l;
+    for (l = opts->options; l; l = l->next) {
+        generator_option_t *entry = l->data;
+        if (entry->short_name == 'h') {
+            return TRUE;
+        }
+    }
+    return FALSE;
+}
+
+static void generator_print_help(generator_options_t *opts) {
+    gint max_length = 50;
+    g_print("%s\n  %s", "Usage:", g_get_prgname());
+    if (opts->options)
+        g_print(" %s", "[OPTION...]");
+
+    g_print("\n\nHelp Options:\n");
+    char token = context_has_h_entry(opts) ? '?' : 'h';
+    g_print("  -%c, --%-*s %s\n", token, max_length - 12, "help", "Show help options");
+
+    g_print("\n\nApplication Options:\n");
+    GList *l;
+    for (l = opts->options; l; l = l->next) {
+        generator_option_t *entry = l->data;
+        int len = 0;
+        if (entry->short_name) {
+            g_print("  -%c, --%s", entry->short_name, entry->long_name);
+            len = 8 + strlen(entry->long_name);
+        } else {
+            g_print("  --%s", entry->long_name);
+            len = 4 + strlen(entry->long_name);
+        }
+        if (entry->arg_description) {
+            g_print("=%s", entry->arg_description);
+            len += 1 + strlen(entry->arg_description);
+        }
+        g_print("%*s %s\n", max_length - len, "", entry->description ? entry->description : "");
+    }
+    exit(0);    
+}
+
+opt_errcode_t generator_options_parse_cmdline(generator_options_t *opts,
+                                             gint *argc,
+                                             gchar **argv,
+                                             GError **error) {
+    if (!argc || !argv) return OPT_ARG_INVALID;
+    return OPT_SUCCESS;
 }
