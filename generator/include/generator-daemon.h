@@ -1,5 +1,5 @@
-#ifndef __GENERATOR_DAEMON__
-#define __GENERATOR_DAEMON__
+#ifndef __GENERATOR_DAEMON_H__
+#define __GENERATOR_DAEMON_H__
 
 #include <glib.h>
 
