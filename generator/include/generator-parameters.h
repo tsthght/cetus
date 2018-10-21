@@ -7,6 +7,14 @@
 typedef struct generator_parameters {
     gint daemon;
     gint keepalive;
+    gchar *master_host;
+    guint *master_port;
+    gchar *master_user;
+    gchar *master_pwd;
+    gchar *master_db;
+    guint *master_connect_timeout;
+    guint *master_read_timeout;
+    guint *master_write_timeout;
 }generator_parameters_t;
 
 typedef struct external_param {

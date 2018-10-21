@@ -3,6 +3,7 @@
 #include "generator-daemon.h"
 #include "generator-options.h"
 #include "generator-parameters.h"
+#include "generator-slave.h"
 
 gint main(gint argc, gchar **argv) {
     generator_parameters_t *param = generator_parameters_new();
@@ -22,14 +23,17 @@ gint main(gint argc, gchar **argv) {
         printf("## keepalive\n");
     }
     gint child_exit_status = EXIT_SUCCESS;
-    gint ret = keepalive(&child_exit_status, NULL);
-    if (ret > 0) {
-        return 0;
-    } else if (ret < 0) {
-        return 0;
-    } else {
+    //gint ret = keepalive(&child_exit_status, NULL);
+    //if (ret > 0) {
+    //    return 0;
+    //} else if (ret < 0) {
+    //    return 0;
+    //} else {
+    //
+    //}
 
-    }
+    printf("master-host=%s\n", param->master_host);        
+
     printf("generator driver\n");
     sleep(1000);
 gen_exit:

@@ -25,6 +25,11 @@ gint generator_parameters_set_options(generator_parameters_t *param,
                           OPTION_ARG_NONE, &(param->keepalive),
                           "keepalive mode", NULL,
                           NULL, NULL, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
+    generator_options_set(opts,
+                          "master-host", 0, 0,
+                          OPTION_ARG_STRING, &(param->master_host),
+                          "master host", "<string>",
+                          NULL, NULL, SHOW_OPTS_PROPERTY|SAVE_OPTS_PROPERTY);
     return 0;
 }
 

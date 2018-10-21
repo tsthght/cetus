@@ -186,6 +186,7 @@ do_read_auth(network_mysqld_con *con, GHashTable *allow_ip_table, GHashTable *de
             network_mysqld_queue_append(con->client, con->client->send_queue, S(packet));
             con->state = ST_SEND_AUTH_RESULT;
             con->auth_result_state = AUTH_SWITCH;
+            g_string_assign_len(con->client->default_db, S(auth->database));
             g_string_free(packet, TRUE);
             g_string_free(g_queue_pop_tail(recv_sock->recv_queue->chunks), TRUE);
             return NETWORK_SOCKET_SUCCESS;
